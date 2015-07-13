@@ -1,0 +1,11 @@
+ofxKinect
+ofxOpenCv
+ofxOsc
+ofxFBOTexture
+ofxOpenNI
+ofxOpticalFlowFarneback
+ofxXmlSettings
+ofxCv
+ofxGpuParticles
+ofxMSAPhysics
+ofxKinectV2
