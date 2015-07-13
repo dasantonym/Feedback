@@ -1,6 +1,8 @@
 # Feedback
 
-An interactive video installation used for an improvised performance at the Hamburg KinoKabaret 2015.
+An interactive video installation used for an improvised dance performance at the Hamburg KinoKabaret 2015.
+
+[Watch the video on Vimeo](https://vimeo.com/130044952)
 
 ## Notes
 
