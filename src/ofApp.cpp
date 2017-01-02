@@ -1,21 +1,20 @@
 #include "ofApp.h"
-
-using namespace cv;
-using namespace ofxCv;
+#include "DepthAnalysis.h"
 
 //--------------------------------------------------------------
 void ofApp::setup() {
     ofSetLogLevel(OF_LOG_VERBOSE);
-
-    _bShowParticles = false;
-    _bShowMoments = false;
-    _bShowGui = false;
-    _bShowStats = false;
-    _bReceiveOSC = true;
-    _bFlipImage = false;
-    _bFlipParticles = false;
+    ofSetVerticalSync(true);
 
     _panel.setup("", "settings.xml", 20, 20);
+
+    _panel.add(_optsShowGui.setup("showGui", false));
+    _panel.add(_optsShowStats.setup("showStats", false));
+    _panel.add(_optsShowMoments.setup("showMoments", false));
+    _panel.add(_optsReceiveOSC.setup("receiveOSC", false));
+    _panel.add(&_depthAnalysis.optsFlipImage);
+    _panel.add(&_depthAnalysis.optsFlipCenter);
+    _panel.add(_optsFreezeParticles.setup("freezeParticles", false));
 
     ofxKinectV2 tmp;
     vector <ofxKinectV2::KinectDeviceInfo> deviceList = tmp.getDeviceList();
@@ -41,7 +40,7 @@ void ofApp::setup() {
 
 void ofApp::onParticlesUpdate(ofShader& shader)
 {
-    shader.setUniform3fv("momentCenter", _momentCenter.getPtr());
+    shader.setUniform3fv("momentCenter", _moments.center.getPtr());
     shader.setUniform2fv("viewSize", _viewSize.getPtr());
     shader.setUniform1f("elapsed", (float) ofGetLastFrameTime());
     shader.setUniform1f("radiusSquared", (float) pow(ofGetHeight(), 2.f));
@@ -49,22 +48,25 @@ void ofApp::onParticlesUpdate(ofShader& shader)
 
 //--------------------------------------------------------------
 void ofApp::update() {
-    if (_bReceiveOSC) {
+    if (_optsReceiveOSC) {
         _osc.update();
     }
 
     for(uint8_t d = 0; d < _kinect.size(); d++){
+        if (d != 0) {
+            continue;
+        }
         _kinect[d]->update();
-        if(_kinect[d]->isFrameNew() && d == 0){
+        if(_kinect[d]->isFrameNew()) {
             _texDepth[d].loadData(_kinect[d]->getDepthPixels());
             _texRGB[d].loadData(_kinect[d]->getRgbPixels());
 
             if (!_bTexturesInitialized) {
-                uint16_t depthWidth = (uint16_t)_texDepth[0].getWidth();
-                uint16_t depthHeight = (uint16_t)_texDepth[0].getHeight();
+                uint16_t depthWidth = (uint16_t) _texDepth[0].getWidth();
+                uint16_t depthHeight = (uint16_t) _texDepth[0].getHeight();
 
-                _grayImage = Mat::zeros(depthHeight, depthWidth, CV_8UC1);
-                _grayImageAvg = Mat::zeros(depthHeight, depthWidth, CV_32FC1);
+                _depthAnalysis.init(depthWidth, depthHeight);
+                _analysisConfig = _depthAnalysis.getConfig();
 
 #ifdef USE_OPTICAL_FLOW
                 flowSolver.setup(depthWidth, depthHeight, .35f, 5, 10, 1, 3, 2.25f, false, false);
@@ -72,63 +74,34 @@ void ofApp::update() {
 
                 _bTexturesInitialized = true;
             }
+        }
 
-            ofPixels depthPixels;
-            _texDepth[d].readToPixels(depthPixels);
-            _grayImage = toCv(depthPixels);
+        if (!_bTexturesInitialized) {
+            continue;
+        }
 
-            if (_bFlipImage) cv::flip(_grayImage, _grayImage, 1);
+        _depthAnalysis.update(&_texDepth[d]);
 
-            if (_bReceiveOSC) {
-                blur(_grayImage, _grayImage, (uint8_t) roundf(min(12.f * _osc.amp, 1.f)));
-            } else {
-                blur(_grayImage, _grayImage, 6);
-            }
+        if (_depthAnalysis.isUpdated()) {
+            _moments = _depthAnalysis.getMoments();
 
-            cv::accumulateWeighted(_grayImage, _grayImageAvg, .5f);
-            _grayImageAvg.convertTo(_grayImage, CV_8UC1);
+            if (_optsShowMoments) {
+                uint16_t idx = (uint16_t) _moments.index;
+                float scale = ofGetWidth() / _texDepth[d].getWidth();
 
-            float scale = ofGetWidth() / _texDepth[d].getWidth();
-            int16_t yoffset = (int16_t)roundf(((_texDepth[d].getHeight() * scale) - ofGetHeight()) * .5f);
+                glNewList(_displayList, GL_COMPILE);
+                glColor4f(1.f, 1.f, 1.f, .5f);
 
-            cv::findContours(_grayImage, _contours, _hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_TC89_KCOS);
-
-            int16_t largeIndex = -1;
-            double largeSize = 0.;
-
-            for (uint16_t i = 0; i < _contours.size(); i++)
-            {
-                double areaSize = contourArea(_contours[i]);
-                if (areaSize > largeSize)
-                {
-                    largeSize = areaSize;
-                    largeIndex = i;
+                glBegin(GL_LINE_STRIP);
+                for (uint16_t cn = 0; cn < _moments.contour.size(); cn++) {
+                    glVertex3d(float(_moments.contour[cn].x) * scale,
+                            float(_moments.contour[cn].y) * scale - _analysisConfig.offset.y, 0.f);
                 }
-            }
+                glVertex3d(float(_moments.contour[0].x) * scale,
+                        float(_moments.contour[0].y) * scale - _analysisConfig.offset.y, 0.f);
+                glEnd();
 
-            if (largeIndex > 0)
-            {
-                Moments largeMoments = moments(_contours[largeIndex]);
-                _momentCenter.x = (float)(largeMoments.m10/largeMoments.m00) * scale - .5f * ofGetWidth();
-                _momentCenter.y = (float)(largeMoments.m01/largeMoments.m00) * scale - .5f * ofGetHeight() - yoffset;
-
-                if (_bFlipParticles) _momentCenter.x *= -1.f;
-
-                if (_bShowMoments) {
-                    glNewList(_displayList, GL_COMPILE);
-                    glColor4f(1.f, 1.f, 1.f, .5f);
-
-                    glBegin(GL_LINE_STRIP);
-                    for (uint16_t cn = 0; cn < _contours[largeIndex].size(); cn++) {
-                        glVertex3d(float(_contours[largeIndex][cn].x) * scale,
-                                float(_contours[largeIndex][cn].y) * scale - yoffset, 0.f);
-                    }
-                    glVertex3d(float(_contours[largeIndex][0].x) * scale,
-                            float(_contours[largeIndex][0].y) * scale - yoffset, 0.f);
-                    glEnd();
-
-                    glEndList();
-                }
+                glEndList();
             }
         }
     }
@@ -140,7 +113,7 @@ void ofApp::update() {
         }
 #endif
 
-        if (_bShowParticles) {
+        if (_bParticlesInitialized && !_optsFreezeParticles) {
             _particles.update();
         }
     }
@@ -151,11 +124,11 @@ void ofApp::draw() {
     ofClear(0, 0, 0, 255);
 
     if (_kinect.size() > 0 && _bTexturesInitialized) {
-        if (_bShowGui) {
+        if (_optsShowGui) {
             _texRGB[0].draw(0, 0, ofGetWidth(), ofGetHeight());
         }
 
-        if (_bShowMoments) {
+        if (_optsShowMoments) {
             ofPushStyle();
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -169,17 +142,17 @@ void ofApp::draw() {
             ofPushStyle();
             ofPushMatrix();
             ofTranslate(ofGetWidth() * .5f, ofGetHeight() * .5f);
-            if (_bFlipParticles) {
+            if (_depthAnalysis.optsFlipCenter) {
                 ofSetColor(255, 0, 0);
             } else {
                 ofSetColor(0, 255, 0);
             }
-            ofDrawCircle(ofPoint(_momentCenter.x, _momentCenter.y), 10);
+            ofDrawCircle(ofPoint(_moments.center.x, _moments.center.y), 10);
             ofPopMatrix();
             ofPopStyle();
         }
 
-        if (_bShowParticles) {
+        if (_bParticlesInitialized) {
             ofPushMatrix();
             ofTranslate(ofGetWidth() * .5f, ofGetHeight() * .5f);
             ofEnableBlendMode(OF_BLENDMODE_ADD);
@@ -188,7 +161,7 @@ void ofApp::draw() {
             ofPopMatrix();
         }
 
-        if (_bShowGui) {
+        if (_optsShowGui) {
             _texDepth[0].draw(ofGetWidth() - 20 - _texDepth[0].getWidth(), 20);
 
 #ifdef USE_OPTICAL_FLOW
@@ -198,9 +171,9 @@ void ofApp::draw() {
             _panel.draw();
         }
 
-        if (_bShowStats) {
+        if (_optsShowStats) {
             ofDrawBitmapString(ofToString(ofGetFrameRate(), 2, 2, '0'), ofGetWidth() - 200, ofGetHeight() - 80);
-            ofDrawBitmapString(ofToString(_momentCenter.x, 2, 3, '0') + ' ' + ofToString(_momentCenter.y, 2, 3, '0'),
+            ofDrawBitmapString(ofToString(_moments.center.x, 2, 3, '0') + ' ' + ofToString(_moments.center.y, 2, 3, '0'),
                     ofGetWidth() - 200, ofGetHeight() - 40);
         }
     }
@@ -301,26 +274,23 @@ void ofApp::keyPressed (int key) {
         case 'f':
             ofToggleFullscreen();
             break;
-        case 'p':
-            _bShowParticles = !_bShowParticles;
-            if (_bShowParticles) {
-                particleSetup();
-            }
+        case ' ':
+            particleSetup();
             break;
         case 'm':
-            _bShowMoments = !_bShowMoments;
+            _optsShowMoments = !_optsShowMoments;
             break;
         case 'g':
-            _bShowGui = !_bShowGui;
+            _optsShowGui = !_optsShowGui;
             break;
         case 's':
-            _bShowStats = !_bShowStats;
+            _optsShowStats = !_optsShowStats;
             break;
         case 'y':
-            _bFlipImage = !_bFlipImage;
+            _depthAnalysis.optsFlipImage = !_depthAnalysis.optsFlipImage;
             break;
         case 'x':
-            _bFlipParticles = !_bFlipParticles;
+            _depthAnalysis.optsFlipCenter = !_depthAnalysis.optsFlipCenter;
             break;
         default:
             break;

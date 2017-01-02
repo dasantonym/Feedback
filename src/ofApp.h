@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ofMain.h"
-#include "ofxCv.h"
 #include "ofxKinectV2.h"
 #include "ofxGpuParticles.h"
 #include "ofxGui.h"
@@ -15,6 +14,7 @@
 #endif
 
 #include "OSCReceiver.h"
+#include "DepthAnalysis.h"
 
 class ofApp : public ofBaseApp {
 public:
@@ -32,30 +32,27 @@ public:
 
     ofxPanel _panel;
     OSCReceiver _osc;
+    DepthAnalysis _depthAnalysis;
     ofxGpuParticles _particles;
+
+    moments_t _moments;
+    analysis_config_t _analysisConfig;
 
     vector<shared_ptr <ofxKinectV2>> _kinect;
     vector<ofTexture> _texDepth;
     vector<ofTexture> _texRGB;
-    
-    cv::Mat _grayImage;
-    cv::Mat _grayImageAvg;
 
-    vector<vector<cv::Point> > _contours;
-    vector<cv::Vec4i> _hierarchy;
-    ofVec3f _momentCenter;
     ofVec2f _viewSize;
     GLuint _displayList;
 
     bool _bTexturesInitialized;
     bool _bParticlesInitialized;
-    bool _bShowMoments;
-    bool _bShowParticles;
-    bool _bShowGui;
-    bool _bShowStats;
-    bool _bReceiveOSC;
-    bool _bFlipImage;
-    bool _bFlipParticles;
+
+    ofxToggle _optsShowMoments;
+    ofxToggle _optsShowGui;
+    ofxToggle _optsShowStats;
+    ofxToggle _optsReceiveOSC;
+    ofxToggle _optsFreezeParticles;
 
 #ifdef USE_OPTICAL_FLOW
     ofxOpticalFlowFarneback flowSolver;
