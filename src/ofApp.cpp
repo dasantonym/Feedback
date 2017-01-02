@@ -5,23 +5,24 @@ using namespace ofxCv;
 
 //--------------------------------------------------------------
 void ofApp::setup() {
-    ofSetLogLevel(OF_LOG_VERBOSE);
+    ofSetLogLevel(OF_LOG_NOTICE);
 
-    lineScale = 10.0;
-    velocityMax = 1000.0;
-    velocityMin = 2.0;
-    angleMin = 0.0;
-    angleMax = 360.0;
+    lineScale = 10.f;
+    velocityMax = 1000.f;
+    velocityMin = 2.f;
+    angleMin = 0.f;
+    angleMax = 360.f;
 
-    amp = 0.0;
-    attack = 0.0;
+    amp = 1.f;
+    attack = 1.f;
 
-    drawCaustics = true;
-    drawParticles = false;
-    drawOutlines = false;
+    bShowParticles = false;
+    bShowMoments = false;
+    bShowGui = false;
+    bUseOpticalFlow = false;
 
-    flipImage = true;
-    flipParticles = true;
+    bFlipImage = true;
+    bFlipParticles = true;
 
     receiver.setup(5556);
 
@@ -33,95 +34,28 @@ void ofApp::setup() {
     texDepth.resize(kinects.size());
     texRGB.resize(kinects.size());
 
-    for(int d = 0; d < kinects.size(); d++){
+    for(uint8_t d = 0; d < kinects.size(); d++){
         kinects[d] = shared_ptr <ofxKinectV2> (new ofxKinectV2());
         kinects[d]->open(deviceList[d].serial);
         panel.add(kinects[d]->params);
     }
 
+    panel.loadFromFile("settings.xml");
+
     outImage.setImageType(OF_IMAGE_GRAYSCALE);
-
-    if (kinects.size() > 0) {
-        uint16_t width = (uint16_t)texDepth[0].getWidth();
-        uint16_t height = (uint16_t)texDepth[0].getHeight();
-
-        caustics.setup(ofGetWidth(), ofGetHeight(), 1000, ofGetWidth()/width);
-        flowSolver.setup(width, height, 0.35, 5, 10, 1, 3, 2.25, false, false);
-
-        inImage.allocate(width, height, OF_IMAGE_GRAYSCALE);
-        outImage.allocate(width, height, OF_IMAGE_GRAYSCALE);
-        grayImage = Mat::zeros(height, width, CV_8UC1);
-        grayImageAvg = Mat::zeros(height, width, CV_32FC1);
-
-        grayThreshNear = Mat::zeros(height, width, CV_8UC1);
-        grayThreshFar = Mat::zeros(height, width, CV_8UC1);
-    }
 
     displayList = glGenLists(1);
 
-    nearThreshold = 50;
-    farThreshold = 9;
-    bThreshWithOpenCV = true;
+    particleSetup();
 
-    // ofSetFrameRate(60);
-
-    // zero the tilt on startup
-    angle = 9;
-
-    // 1,000,000 particles
-    unsigned w = 500;
-    unsigned h = 500;
-
-    particles.init(w, h);
-
-    // initial positions
-    // use new to allocate 4,000,000 floats on the heap rather than
-    // the stack
-    float* particlePosns = new float[w * h * 4];
-    for (unsigned y = 0; y < h; ++y)
-    {
-        for (unsigned x = 0; x < w; ++x)
-        {
-            unsigned idx = y * w + x;
-            particlePosns[idx * 4] = 400.f * x / (float)w - 200.f; // particle x
-            particlePosns[idx * 4 + 1] = 400.f * y / (float)h - 200.f; // particle y
-            particlePosns[idx * 4 + 2] = 0.f; // particle z
-            particlePosns[idx * 4 + 3] = 0.f; // dummy
-        }
-    }
-    particles.loadDataTexture(ofxGpuParticles::POSITION, particlePosns);
-    delete[] particlePosns;
-
-    // initial velocities
-    particles.zeroDataTexture(ofxGpuParticles::VELOCITY);
-
-    // listen for update event to set additonal update uniforms
     ofAddListener(particles.updateEvent, this, &ofApp::onParticlesUpdate);
-    ofAddListener(particles.drawEvent, this, &ofApp::onParticlesDraw);
-
-    // start from the front
-    bDrawPointCloud = false;
 }
 
 void ofApp::onParticlesUpdate(ofShader& shader)
 {
-    float flip = 1.0f;
-    if (flipParticles) {
-        flip = -1.0f;
-    }
-    //ofVec3f mouse(ofGetMouseX() - .5f * ofGetWidth(), .5f * ofGetHeight() - ofGetMouseY() , 0.f);
-    ofVec3f mouse((mc.x - .5f * ofGetWidth()) * flip, .5f * ofGetHeight() - mc.y, 0.f);
-    // ofVec3f ext1(mc.x - .5f * ofGetWidth(), .5f * ofGetHeight() - mc.y , 0.f);
-    shader.setUniform3fv("mouse", mouse.getPtr());
+    shader.setUniform3fv("mouse", _mouse.getPtr());
     shader.setUniform1f("elapsed", (float)ofGetLastFrameTime());
-    shader.setUniform1f("radiusSquared", 300.f * 300.f);
-}
-
-void ofApp::onParticlesDraw(ofShader& shader)
-{
-    //ofVec3f mouse(ofGetMouseX() - .5f * ofGetWidth(), .5f * ofGetHeight() - ofGetMouseY() , 0.f);
-    //ofVec3f mouse(mc.x - .5f * ofGetWidth(), .5f * ofGetHeight() - mc.y , 0.f);
-    //shader.setUniform3fv("mouse", mouse.getPtr());
+    shader.setUniform1f("radiusSquared", 600.f * 600.f);
 }
 
 //--------------------------------------------------------------
@@ -137,34 +71,34 @@ void ofApp::update() {
         if (m.getAddress() == "/bonk")
         {
             float val = m.getArgAsFloat(1) / 100.f;
-            if (val > 1.0)
+            if (val > 1.f)
             {
-                val = 1.0;
+                val = 1.f;
             }
             attack = val;
         } else {
-            attack *= 0.5;
+            attack *= .5f;
         }
 
         if (m.getAddress() == "/pitch")
         {
             float val = m.getArgAsFloat(0)/80.f;
-            if (val > 1.0)
+            if (val > 1.f)
             {
-                val = 1.0;
+                val = 1.f;
             }
             pitch = val;
         } else {
-            pitch *= 0.5;
+            pitch *= .5f;
         }
 
         if (m.getAddress() == "/amp")
         {
             float val = m.getArgAsFloat(0)/100.f;
 
-            if (val > 1.0)
+            if (val > 1.f)
             {
-                val = 1.0;
+                val = 1.f;
             }
             amp = val;
         }
@@ -177,45 +111,43 @@ void ofApp::update() {
             texDepth[d].loadData( kinects[d]->getDepthPixels() );
             texRGB[d].loadData( kinects[d]->getRgbPixels() );
 
+            if (d == 0 && !bTexturesInitialized) {
+                uint16_t width = (uint16_t)texDepth[0].getWidth();
+                uint16_t height = (uint16_t)texDepth[0].getHeight();
+
+                flowSolver.setup(width, height, .35f, 5, 10, 1, 3, 2.25f, false, false);
+
+                outImage.allocate(width, height, OF_IMAGE_GRAYSCALE);
+                grayImage = Mat::zeros(height, width, CV_8UC1);
+                grayImageAvg = Mat::zeros(height, width, CV_32FC1);
+
+                bTexturesInitialized = true;
+            }
+
             if (d == 0) {
-                ofPixels pixels;
-                texDepth[d].readToPixels(pixels);
-                outImage.setFromPixels(pixels);
-                outImage.resize(ofGetWidth(), ofGetHeight());
+                ofPixels depthPixels;
+                texDepth[d].readToPixels(depthPixels);
+                outImage.setFromPixels(depthPixels);
                 grayImage = toCv(outImage);
 
-                if (flipImage)
-                {
-                    cv::flip(grayImage, grayImage, 1);
-                }
+                if (bFlipImage) cv::flip(grayImage, grayImage, 1);
 
-                blur(grayImage, grayImage, (uint8_t)roundf(12.0f*amp+1.0f));
+                blur(grayImage, grayImage, (uint8_t)roundf(12.f*amp+1.f));
 
-                cv::accumulateWeighted(grayImage, grayImageAvg, 0.2);
+                cv::accumulateWeighted(grayImage, grayImageAvg, .2f);
+                grayImageAvg.convertTo(grayImage, CV_8UC1);
 
-                Mat tmp;
-                grayImageAvg.convertTo(tmp, CV_8UC1);
-
-                threshold(tmp, grayThreshNear, nearThreshold, 255, CV_THRESH_BINARY_INV);
-                threshold(tmp, grayThreshFar, farThreshold, 255, CV_THRESH_BINARY);
-
-                bitwise_and(grayThreshNear, grayThreshFar, tmp);
-
-                toOf(tmp, outImage);
                 outImage.update();
 
-                cv::findContours(tmp, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_TC89_KCOS);
+                float scale = ofGetWidth() / outImage.getWidth();
+                int16_t yoffset = (int16_t)roundf(((outImage.getHeight() * scale) - ofGetHeight()) * .5f);
 
-                glNewList(displayList, GL_COMPILE);
-                glColor4f(1.0, 1.0, 1.0, 0.5);
+                cv::findContours(grayImage, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_TC89_KCOS);
 
-                float scaleFactorX = float(ofGetWidth())/texDepth[d].getWidth();
-                float scaleFactorY = float(ofGetHeight())/texDepth[d].getHeight();
+                int16_t largeIndex = -1;
+                double largeSize = 0.;
 
-                double largeIndex = -1.0;
-                double largeSize = 0.0;
-
-                for (unsigned int i = 0; i < contours.size(); i++)
+                for (uint16_t i = 0; i < contours.size(); i++)
                 {
                     double areaSize = contourArea(contours[i]);
                     if (areaSize > largeSize)
@@ -228,55 +160,34 @@ void ofApp::update() {
                 if (largeIndex > 0)
                 {
                     Moments largeMoments = moments(contours[largeIndex]);
-                    mc = Point2f( (float)(largeMoments.m10/largeMoments.m00) * scaleFactorX , (float)(largeMoments.m01/largeMoments.m00) * scaleFactorY );
+                    mc = Point2f( (float)(largeMoments.m10/largeMoments.m00), (float)(largeMoments.m01/largeMoments.m00) );
+                    _mouse.x = mc.x * scale - .5f * ofGetWidth();
+                    _mouse.y = mc.y * scale - .5f * ofGetHeight() - yoffset;
 
-                    if (drawCaustics)
-                    {
-                        caustics.reset();
-                    }
+                    if (bFlipParticles) _mouse.x *= -1.f;
 
-                    glBegin(GL_LINE_STRIP);
-                    for (unsigned int cn = 0; cn < contours[largeIndex].size(); cn++)
-                    {
-                        if (drawCaustics)
-                        {
-                            caustics.addPoint(ofVec2f(contours[largeIndex][cn].x, contours[largeIndex][cn].y));
+                    if (bShowMoments) {
+                        glNewList(displayList, GL_COMPILE);
+                        glColor4f(1.f, 1.f, 1.f, .5f);
+
+                        glBegin(GL_LINE_STRIP);
+                        for (uint16_t cn = 0; cn < contours[largeIndex].size(); cn++) {
+                            glVertex3d(float(contours[largeIndex][cn].x) * scale, float(contours[largeIndex][cn].y) * scale - yoffset, 0.f);
                         }
-                        glVertex3d(float(contours[largeIndex][cn].x)*scaleFactorX, float(contours[largeIndex][cn].y)*scaleFactorY, 0.0);
-                    }
-                    glVertex3d(float(contours[largeIndex][0].x)*scaleFactorX, float(contours[largeIndex][0].y)*scaleFactorY, 0.0);
-                    glEnd();
+                        glVertex3d(float(contours[largeIndex][0].x) * scale, float(contours[largeIndex][0].y) * scale - yoffset, 0.f);
+                        glEnd();
 
-                    // add caustics points on the borders
-
-                    if (drawCaustics)
-                    {
-
-                        float factor = pitch * 15 + 1;
-                        for (uint8_t x = 0; x < ofGetWidth(); x += ofGetWidth() / factor)
-                        {
-                            caustics.addPoint(ofVec2f(x, 0.0));
-                            caustics.addPoint(ofVec2f(x, ofGetHeight()));
-                        }
-
-                        for (uint8_t y = 0; y < ofGetHeight(); y += ofGetHeight() / factor)
-                        {
-                            caustics.addPoint(ofVec2f(0.0, y));
-                            caustics.addPoint(ofVec2f(ofGetWidth(), y));
-                        }
-
-                        // this triggers the delaunay
-                        caustics.update(amp);
+                        glEndList();
                     }
                 }
-                glEndList();
-
-                //flowSolver.update(outImage);
+                if (bUseOpticalFlow) {
+                    flowSolver.update(outImage);
+                }
             }
         }
     }
 
-    if (drawParticles)
+    if (bShowParticles)
     {
         particles.update();
     }
@@ -287,18 +198,9 @@ void ofApp::draw() {
 
     ofClear(0, 0, 0, 255);
 
-    //outImage.draw(0, 0, ofGetWidth(), ofGetHeight());
-    //contourFinder.draw(10, 320, 400, 300);
-
-    if (texDepth.size() > 0) {
-        // drawFlowColored(texDepth[0].getWidth(), texDepth[0].getHeight());
-
-        if (drawCaustics) {
-            caustics.renderToFbo();
-            caustics.getFbo().draw(0, 0, ofGetWidth(), ofGetHeight());
-        }
-
-        if (drawOutlines) {
+    if (texDepth.size() > 0 && bTexturesInitialized) {
+        if (bShowMoments) {
+            ofPushStyle();
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glEnable(GL_LINE_SMOOTH);
@@ -306,50 +208,49 @@ void ofApp::draw() {
             glCallList(displayList);
             glDisable(GL_LINE_SMOOTH);
             glDisable(GL_BLEND);
+            ofPopStyle();
+            ofPushStyle();
+            ofPushMatrix();
+            ofTranslate(ofGetWidth() * .5f, ofGetHeight() * .5f);
+            if (bFlipParticles) {
+                ofSetColor(255, 0, 0);
+            } else {
+                ofSetColor(0, 255, 0);
+            }
+            ofDrawCircle(ofPoint(_mouse.x, _mouse.y), 10);
+            ofPopMatrix();
+            ofPopStyle();
         }
 
-        if (drawParticles) {
-            easyCam.begin();
+        if (bShowParticles) {
+            ofPushStyle();
+            ofPushMatrix();
+            ofTranslate(ofGetWidth() * .5f, ofGetHeight() * .5f);
             ofEnableBlendMode(OF_BLENDMODE_ADD);
             particles.draw();
             ofDisableBlendMode();
-            easyCam.end();
+            ofPopMatrix();
+            ofPopStyle();
+        }
+
+        if (bShowGui) {
+            ofPushStyle();
+            texDepth[0].draw(ofGetWidth() - 20 - texDepth[0].getWidth(), 20);
+            texRGB[0].draw(ofGetWidth() - 20 - texRGB[0].getWidth() * .25f,
+                    texDepth[0].getHeight() + 40, texRGB[0].getWidth() * .25f, texRGB[0].getHeight() * .25f);
+            outImage.draw(ofGetWidth() - 20 - outImage.getWidth() - 20 - texDepth[0].getWidth(),
+                    20, texDepth[0].getWidth(), texDepth[0].getHeight());
+
+            ofDrawBitmapString(ofToString(ofGetFrameRate(), 2, 2), ofGetWidth() - 200, ofGetHeight() - 80);
+            ofDrawBitmapString(ofToString(_mouse.x, 2, 4) + ' ' + ofToString(_mouse.y, 2, 4),
+                    ofGetWidth() - 200, ofGetHeight() - 40);
+            ofPopStyle();
+
+            if (bUseOpticalFlow) drawFlowColored(texDepth[0].getWidth(), texDepth[0].getHeight());
+
+            panel.draw();
         }
     }
-
-    panel.draw();
-
-    // draw instructions
-    /*
-    ofSetColor(255, 255, 255);
-    stringstream reportStream;
-
-    if(kinect.hasAccelControl()) {
-        reportStream << "accel is: " << ofToString(kinect.getMksAccel().x, 2) << " / "
-        << ofToString(kinect.getMksAccel().y, 2) << " / "
-        << ofToString(kinect.getMksAccel().z, 2) << endl;
-    } else {
-        reportStream << "Note: this is a newer Xbox Kinect or Kinect For Windows device," << endl
-        << "motor / led / accel controls are not currently supported" << endl << endl;
-    }
-
-    reportStream << "press p to switch between images and point cloud, rotate the point cloud with the mouse" << endl
-    << "using opencv threshold = " << bThreshWithOpenCV <<" (press spacebar)" << endl
-    << "set near threshold " << nearThreshold << " (press: + -)" << endl
-    << "set far threshold " << farThreshold << " (press: < >) num blobs found "// << contourFinder.nBlobs
-    << ", fps: " << ofGetFrameRate() << endl
-    << "press c to close the connection and o to open it again, connection is: " << kinect.isConnected() << endl;
-
-    if(kinect.hasCamTiltControl()) {
-        reportStream << "press UP and DOWN to change the tilt angle: " << angle << " degrees" << endl
-        << "press 1-5 & 0 to change the led mode" << endl;
-    }
-     */
-
-    //ofDrawBitmapString(reportStream.str(), 20, 652);
-
-
-
 }
 
 void ofApp::drawFlowColored(float width, float height) {
@@ -373,11 +274,11 @@ void ofApp::drawFlowColored(float width, float height) {
             }
             float hue = angle/(3.14159265f*2.0f);
             ofFloatColor c;
-            c.setHsb(hue, 1.0, 1.0);
-            c.a = 0.25;
+            c.setHsb(hue, 1.f, 1.f);
+            c.a = 0.25f;
             velMesh.addColor(c);
             velMesh.addVertex(p);
-            c.a = 0.0;
+            c.a = 0.f;
             velMesh.addColor(c);
             velMesh.addVertex(p+vel*lineScale);
         }
@@ -390,7 +291,41 @@ void ofApp::drawFlowColored(float width, float height) {
 }
 
 //--------------------------------------------------------------
+void ofApp::particleSetup() {
+    uint16_t w = (uint16_t) ofGetWidth();
+    uint16_t h = (uint16_t) ofGetHeight();
+
+    particles.init(w, h);
+    if (ofIsGLProgrammableRenderer()) {
+        ofLogNotice() << "Using GL programmable renderer.";
+        particles.loadShaders("shaders330/update", "shaders330/draw");
+    } else {
+        particles.loadShaders("shaders120/update", "shaders120/draw");
+    }
+
+    ofLogNotice() << "Adding particle count: " << w * h;
+
+    // use new to allocate floats on the heap rather than the stack
+    float* particlePos = new float[w * h * 4];
+    for (uint16_t y = 0; y < h; ++y)
+    {
+        for (uint16_t x = 0; x < w; ++x)
+        {
+            uint16_t idx = y * w + x;
+            particlePos[idx * 4] = (x - w * .5f);
+            particlePos[idx * 4 + 1] = (y - h * .5f);
+            particlePos[idx * 4 + 2] = 0.f;
+            particlePos[idx * 4 + 3] = 0.f;
+        }
+    }
+    particles.zeroDataTexture(ofxGpuParticles::VELOCITY);
+    particles.loadDataTexture(ofxGpuParticles::POSITION, particlePos);
+    delete[] particlePos;
+}
+
+//--------------------------------------------------------------
 void ofApp::exit() {
+    panel.saveToFile("settings.xml");
     for (uint8_t i = 0; i < kinects.size(); i +=1) {
         kinects[i].get()->close();
     }
@@ -400,60 +335,25 @@ void ofApp::exit() {
 void ofApp::keyPressed (int key) {
     switch (key) {
         case 'f':
-            ofSetFullscreen(true);
-        case ' ':
-            bThreshWithOpenCV = !bThreshWithOpenCV;
+            ofToggleFullscreen();
             break;
-
-        case'p':
-            bDrawPointCloud = !bDrawPointCloud;
-            break;
-
-        case 'a':
-            drawCaustics = !drawCaustics;
-            break;
-
-        case 's':
-            if (!drawParticles)
-            {
-                unsigned w = 500;
-                unsigned h = 500;
-
-                particles.init(w, h);
-                // initial positions
-                // use new to allocate 4,000,000 floats on the heap rather than
-                // the stack
-                float* particlePosns = new float[w * h * 4];
-                for (unsigned y = 0; y < h; ++y)
-                {
-                    for (unsigned x = 0; x < w; ++x)
-                    {
-                        unsigned idx = y * w + x;
-                        particlePosns[idx * 4] = 400.f * x / (float)w - 200.f; // particle x
-                        particlePosns[idx * 4 + 1] = 400.f * y / (float)h - 200.f; // particle y
-                        particlePosns[idx * 4 + 2] = 0.f; // particle z
-                        particlePosns[idx * 4 + 3] = 0.f; // dummy
-                    }
-                }
-                particles.loadDataTexture(ofxGpuParticles::POSITION, particlePosns);
-                delete[] particlePosns;
-
-                // initial velocities
-                particles.zeroDataTexture(ofxGpuParticles::VELOCITY);
+        case 'p':
+            bShowParticles = !bShowParticles;
+            if (bShowParticles) {
+                particleSetup();
             }
-            drawParticles = !drawParticles;
             break;
-
-        case 'd':
-            drawOutlines = !drawOutlines;
+        case 'm':
+            bShowMoments = !bShowMoments;
             break;
-
+        case 'g':
+            bShowGui = !bShowGui;
+            break;
         case 'y':
-            flipImage = !flipImage;
+            bFlipImage = !bFlipImage;
             break;
-
         case 'x':
-            flipParticles = !flipParticles;
+            bFlipParticles = !bFlipParticles;
             break;
         default:
             break;

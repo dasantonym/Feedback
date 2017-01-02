@@ -1,5 +1,4 @@
 ofxCv
-ofxDelaunay
 ofxFBOTexture
 ofxGpuParticles
 ofxGui

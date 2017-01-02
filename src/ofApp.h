@@ -5,7 +5,6 @@
 #include "ofxKinectV2.h"
 #include "ofxOpticalFlowFarneback.h"
 #include "ofxGpuParticles.h"
-#include "Caustics.h"
 #include "ofxOsc.h"
 #include "ofxGui.h"
 
@@ -18,6 +17,7 @@ public:
     void exit();
     
     void drawFlowColored(float width, float height);
+    void particleSetup();
     
     void keyPressed(int key);
     void mouseDragged(int x, int y, int button);
@@ -26,7 +26,6 @@ public:
     void windowResized(int w, int h);
     
     void onParticlesUpdate(ofShader& shader);
-    void onParticlesDraw(ofShader& shader);
 
     ofxPanel panel;
 
@@ -36,8 +35,6 @@ public:
     vector<ofTexture> texDepth;
     vector<ofTexture> texRGB;
     
-    Caustics caustics;
-    
     vector<vector<cv::Point> > contours;
     vector<cv::Vec4i> hierarchy;
     
@@ -45,35 +42,17 @@ public:
     
     ofxOscReceiver receiver;
     
-    cv::Mat canny_input;
-    cv::Mat canny_output;
-    
-    cv::Mat grayImage; // grayscale depth image
+    cv::Mat grayImage;
     cv::Mat grayImageAvg;
-    
-    cv::Mat grayThreshNear;
-    cv::Mat grayThreshFar;
-    
     ofImage outImage;
-    ofImage inImage;
-    //ofxCvGrayscaleImage grayThreshNear; // the near thresholded image
-    //ofxCvGrayscaleImage grayThreshFar; // the far thresholded image
-    
-    //ofxCvContourFinder contourFinder;
     
     cv::Point2f mc;
-    
-    
-    
-    unsigned int displayList;
-    
-    bool bThreshWithOpenCV;
-    bool bDrawPointCloud;
-    
-    int nearThreshold;
-    int farThreshold;
-    
-    int angle;
+    GLuint displayList;
+
+    bool bTexturesInitialized;
+
+    ofVec3f _mouse;
+
     float attack;
     float amp;
     float pitch;
@@ -84,15 +63,13 @@ public:
     float angleMax;
     
     float lineScale;
-    int resolution;
+    uint16_t resolution;
     
-    bool drawOutlines;
-    bool drawParticles;
-    bool drawCaustics;
+    bool bShowMoments;
+    bool bShowParticles;
+    bool bShowGui;
+    bool bUseOpticalFlow;
     
-    bool flipImage;
-    bool flipParticles;
-    
-    // used for viewing the point cloud
-    ofEasyCam easyCam;
+    bool bFlipImage;
+    bool bFlipParticles;
 };

@@ -1,7 +1,9 @@
 # Xcode
 .DS_Store
 build/
-bin/
+bin/*
+!bin/data/shaders120
+!bin/data/shaders330
 *.pbxuser
 !default.pbxuser
 *.mode1v3
