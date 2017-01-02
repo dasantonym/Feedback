@@ -1,12 +1,18 @@
 #pragma once
 
+// #define USE_OPTICAL_FLOW
+
 #include "ofMain.h"
 #include "ofxCv.h"
 #include "ofxKinectV2.h"
-#include "ofxOpticalFlowFarneback.h"
 #include "ofxGpuParticles.h"
-#include "ofxOsc.h"
 #include "ofxGui.h"
+
+#ifdef USE_OPTICAL_FLOW
+#include "ofxOpticalFlowFarneback.h"
+#endif
+
+#include "OSCReceiver.h"
 
 class ofApp : public ofBaseApp {
 public:
@@ -15,61 +21,41 @@ public:
     void update();
     void draw();
     void exit();
-    
-    void drawFlowColored(float width, float height);
+
     void particleSetup();
+    void onParticlesUpdate(ofShader& shader);
     
     void keyPressed(int key);
-    void mouseDragged(int x, int y, int button);
-    void mousePressed(int x, int y, int button);
-    void mouseReleased(int x, int y, int button);
-    void windowResized(int w, int h);
-    
-    void onParticlesUpdate(ofShader& shader);
 
-    ofxPanel panel;
+    ofxPanel _panel;
+    OSCReceiver _osc;
+    ofxGpuParticles _particles;
 
-    ofxGpuParticles particles;
+    vector<shared_ptr <ofxKinectV2>> _kinect;
+    vector<ofTexture> _texDepth;
+    vector<ofTexture> _texRGB;
+    
+    cv::Mat _grayImage;
+    cv::Mat _grayImageAvg;
+    ofImage _depthImage;
 
-    vector<shared_ptr <ofxKinectV2>> kinects;
-    vector<ofTexture> texDepth;
-    vector<ofTexture> texRGB;
-    
-    vector<vector<cv::Point> > contours;
-    vector<cv::Vec4i> hierarchy;
-    
+    vector<vector<cv::Point> > _contours;
+    vector<cv::Vec4i> _hierarchy;
+    ofVec3f _momentCenter;
+    GLuint _displayList;
+
+    bool _bTexturesInitialized;
+    bool _bShowMoments;
+    bool _bShowParticles;
+    bool _bShowGui;
+    bool _bReceiveOSC;
+    bool _bFlipImage;
+    bool _bFlipParticles;
+
+#ifdef USE_OPTICAL_FLOW
     ofxOpticalFlowFarneback flowSolver;
-    
-    ofxOscReceiver receiver;
-    
-    cv::Mat grayImage;
-    cv::Mat grayImageAvg;
-    ofImage outImage;
-    
-    cv::Point2f mc;
-    GLuint displayList;
 
-    bool bTexturesInitialized;
-
-    ofVec3f _mouse;
-
-    float attack;
-    float amp;
-    float pitch;
-    
-    float velocityMin;
-    float velocityMax;
-    float angleMin;
-    float angleMax;
-    
-    float lineScale;
-    uint16_t resolution;
-    
-    bool bShowMoments;
-    bool bShowParticles;
-    bool bShowGui;
-    bool bUseOpticalFlow;
-    
-    bool bFlipImage;
-    bool bFlipParticles;
+    void drawFlowColored(float width, float height, float degMin = .0f,
+            float degMax = 360.f, float velMin = 2.f, float velMax = 1000.f);
+#endif
 };
