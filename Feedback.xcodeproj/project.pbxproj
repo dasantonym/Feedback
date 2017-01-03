@@ -29,7 +29,8 @@
 		510CAFE035E576A4E1502D52 /* UdpSocket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E6DEF695B88BA5FAACEAA937 /* UdpSocket.cpp */; };
 		5864AD82E20F15536D054EA3 /* ofxOscMessage.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DF49D76C45D5DB505A234880 /* ofxOscMessage.cpp */; };
 		58AAABE5396C4C1A9B951995 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 58AAA1291A4FD5D1FAAD8C57 /* OpenCL.framework */; };
-		58AAAE6FBD3A85DFCBF521C3 /* DepthAnalysis.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 58AAAFF9681C39CE7A65E1DB /* DepthAnalysis.cpp */; };
+		58AAAE64E56B381F9C0069B0 /* CVContourCenter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 58AAAABD227917440513C80E /* CVContourCenter.cpp */; };
+		58AAAF25F58AA8D27EFC843E /* OpticalFlow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 58AAA8570941F565845AB882 /* OpticalFlow.cpp */; };
 		5A4349E9754D6FA14C0F2A3A /* tinyxmlparser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC5DA1C87211D4F6377DA719 /* tinyxmlparser.cpp */; };
 		5CBB2AB3A60F65431D7B555D /* ofxButton.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C88333E71C9457E441C33474 /* ofxButton.cpp */; };
 		5CC34D433F5806179935B89D /* Flow.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 03A75A648BC4CF1D9DEDD0CE /* Flow.cpp */; };
@@ -211,17 +212,19 @@
 		56ED74AD5FC73867F5E046F0 /* photo_c.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = photo_c.h; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv2/photo/photo_c.h; sourceTree = SOURCE_ROOT; };
 		58140E0F92D37844E9C8883D /* Calibration.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = Calibration.h; path = ../../../addons/ofxCv/libs/ofxCv/include/ofxCv/Calibration.h; sourceTree = SOURCE_ROOT; };
 		586A8EC141BDFA82B3B0518C /* config.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = config.h; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv2/flann/config.h; sourceTree = SOURCE_ROOT; };
+		58AAA092DD9F864AC5F8A6F5 /* OpticalFlow.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OpticalFlow.h; sourceTree = "<group>"; };
 		58AAA1291A4FD5D1FAAD8C57 /* OpenCL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenCL.framework; path = System/Library/Frameworks/OpenCL.framework; sourceTree = SDKROOT; };
 		58AAA5A399A215FA7CF27571 /* update.vert */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = update.vert; sourceTree = "<group>"; };
 		58AAA5D65F4BF31342F75370 /* draw.frag */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = draw.frag; sourceTree = "<group>"; };
 		58AAA66832DCFDE9E8FA9B0A /* draw.frag */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = draw.frag; sourceTree = "<group>"; };
 		58AAA69FBA1DA36ADF122793 /* update.frag */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = update.frag; sourceTree = "<group>"; };
-		58AAA6FF0806B4D22739ABDB /* DepthAnalysis.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DepthAnalysis.h; sourceTree = "<group>"; };
+		58AAA8570941F565845AB882 /* OpticalFlow.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = OpticalFlow.cpp; sourceTree = "<group>"; };
 		58AAAA2A99E7920A533B2BAF /* draw.vert */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = draw.vert; sourceTree = "<group>"; };
+		58AAAABD227917440513C80E /* CVContourCenter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CVContourCenter.cpp; sourceTree = "<group>"; };
 		58AAAABEA1C342DDB2C46C05 /* update.frag */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = update.frag; sourceTree = "<group>"; };
 		58AAACAE1081AFDAEA5D40A1 /* draw.vert */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = draw.vert; sourceTree = "<group>"; };
 		58AAAF87A3C6FBDA68E7CA3F /* update.vert */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = update.vert; sourceTree = "<group>"; };
-		58AAAFF9681C39CE7A65E1DB /* DepthAnalysis.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DepthAnalysis.cpp; sourceTree = "<group>"; };
+		58AAAF92F4B2DA450F9A5E73 /* CVContourCenter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CVContourCenter.h; sourceTree = "<group>"; };
 		59570D160E1EDD6EB832826A /* frame_source.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = frame_source.hpp; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv2/videostab/frame_source.hpp; sourceTree = SOURCE_ROOT; };
 		59626D03C690200AD4E8B3A6 /* ml.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = ml.hpp; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv2/ml/ml.hpp; sourceTree = SOURCE_ROOT; };
 		5A59183C98FC5E69FC90F138 /* contrib.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = contrib.hpp; path = ../../../addons/ofxOpenCv/libs/opencv/include/opencv2/contrib/contrib.hpp; sourceTree = SOURCE_ROOT; };
@@ -824,6 +827,17 @@
 			name = gpu;
 			sourceTree = "<group>";
 		};
+		58AAA7C7C989D906E0F61715 /* analysis */ = {
+			isa = PBXGroup;
+			children = (
+				58AAAF92F4B2DA450F9A5E73 /* CVContourCenter.h */,
+				58AAAABD227917440513C80E /* CVContourCenter.cpp */,
+				58AAA8570941F565845AB882 /* OpticalFlow.cpp */,
+				58AAA092DD9F864AC5F8A6F5 /* OpticalFlow.h */,
+			);
+			path = analysis;
+			sourceTree = "<group>";
+		};
 		58AAAA6EF59B3F7DBE2DE535 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -1412,8 +1426,7 @@
 				AB10744D7534CA8375746C7A /* OSCReceiver.h */,
 				58AAAFA8B0586BE7A0230953 /* shaders120 */,
 				58AAAAAEE3D348993D6DB6DD /* shaders330 */,
-				58AAAFF9681C39CE7A65E1DB /* DepthAnalysis.cpp */,
-				58AAA6FF0806B4D22739ABDB /* DepthAnalysis.h */,
+				58AAA7C7C989D906E0F61715 /* analysis */,
 			);
 			path = src;
 			sourceTree = SOURCE_ROOT;
@@ -1680,7 +1693,8 @@
 				933A2227713C720CEFF80FD9 /* tinyxml.cpp in Sources */,
 				9D44DC88EF9E7991B4A09951 /* tinyxmlerror.cpp in Sources */,
 				5A4349E9754D6FA14C0F2A3A /* tinyxmlparser.cpp in Sources */,
-				58AAAE6FBD3A85DFCBF521C3 /* DepthAnalysis.cpp in Sources */,
+				58AAAE64E56B381F9C0069B0 /* CVContourCenter.cpp in Sources */,
+				58AAAF25F58AA8D27EFC843E /* OpticalFlow.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

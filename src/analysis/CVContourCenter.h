@@ -1,9 +1,5 @@
-//
-// Created by anton on 02/01/17.
-//
-
-#ifndef FEEDBACK_DEPTHANALYSIS_H
-#define FEEDBACK_DEPTHANALYSIS_H
+#ifndef FEEDBACK_CVCONTOURCENTER_H
+#define FEEDBACK_CVCONTOURCENTER_H
 
 #include "ofMain.h"
 #include "ofxGui.h"
@@ -23,9 +19,9 @@ typedef struct {
     uint16_t blurAmount;
 } analysis_config_t;
 
-class DepthAnalysis: public ofThread {
+class CVContourCenter: public ofThread {
 public:
-    DepthAnalysis();
+    CVContourCenter();
 
     void init(uint16_t width, uint16_t height);
     void update(ofTexture *texture);
@@ -65,4 +61,4 @@ private:
 };
 
 
-#endif //FEEDBACK_DEPTHANALYSIS_H
+#endif //FEEDBACK_CVCONTOURCENTER_H

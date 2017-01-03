@@ -1,14 +1,14 @@
-#include "DepthAnalysis.h"
+#include "CVContourCenter.h"
 
 using namespace cv;
 using namespace ofxCv;
 
-DepthAnalysis::DepthAnalysis() {
+CVContourCenter::CVContourCenter() {
     optsFlipImage.setup("flipImage", false);
     optsFlipCenter.setup("flipCenter", false);
 }
 
-void DepthAnalysis::init(uint16_t width, uint16_t height) {
+void CVContourCenter::init(uint16_t width, uint16_t height) {
     _width = width;
     _height = height;
 
@@ -20,7 +20,7 @@ void DepthAnalysis::init(uint16_t width, uint16_t height) {
     _bTexturesInitialized = true;
 }
 
-void DepthAnalysis::update(ofTexture *texture) {
+void CVContourCenter::update(ofTexture *texture) {
     if (isThreadRunning()) return;
     if (texture->isAllocated()) {
         lock();
@@ -31,21 +31,20 @@ void DepthAnalysis::update(ofTexture *texture) {
     startThread(false);
 }
 
-bool DepthAnalysis::isUpdated() {
+bool CVContourCenter::isUpdated() {
     lock();
     bool updated = _bDirty;
     unlock();
     return updated;
 }
 
-void DepthAnalysis::threadedFunction() {
+void CVContourCenter::threadedFunction() {
     if (_bTexturesInitialized && _bUpdated) {
         bool updated = false;
 
         lock();
         _bUpdated = false;
         _grayImage = toCv(_depthPixels);
-
 
         if (optsFlipImage) flip(_grayImage, _grayImage, 1);
 
@@ -86,7 +85,7 @@ void DepthAnalysis::threadedFunction() {
     }
 }
 
-analysis_config_t DepthAnalysis::getConfig() {
+analysis_config_t CVContourCenter::getConfig() {
     analysis_config_t config;
     lock();
     config.blurAmount = _blurAmount;
@@ -97,7 +96,7 @@ analysis_config_t DepthAnalysis::getConfig() {
     return config;
 }
 
-moments_t DepthAnalysis::getMoments() {
+moments_t CVContourCenter::getMoments() {
     moments_t moments;
     lock();
     moments.center = _momentCenter;

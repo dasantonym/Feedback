@@ -1,5 +1,4 @@
 #include "ofApp.h"
-#include "DepthAnalysis.h"
 
 //--------------------------------------------------------------
 void ofApp::setup() {
@@ -12,9 +11,10 @@ void ofApp::setup() {
     _panel.add(_optsShowStats.setup("showStats", false));
     _panel.add(_optsShowMoments.setup("showMoments", false));
     _panel.add(_optsReceiveOSC.setup("receiveOSC", false));
-    _panel.add(&_depthAnalysis.optsFlipImage);
-    _panel.add(&_depthAnalysis.optsFlipCenter);
     _panel.add(_optsFreezeParticles.setup("freezeParticles", false));
+
+    _panel.add(&_cvContourCenter.optsFlipImage);
+    _panel.add(&_cvContourCenter.optsFlipCenter);
 
     ofxKinectV2 tmp;
     vector <ofxKinectV2::KinectDeviceInfo> deviceList = tmp.getDeviceList();
@@ -65,12 +65,10 @@ void ofApp::update() {
                 uint16_t depthWidth = (uint16_t) _texDepth[0].getWidth();
                 uint16_t depthHeight = (uint16_t) _texDepth[0].getHeight();
 
-                _depthAnalysis.init(depthWidth, depthHeight);
-                _analysisConfig = _depthAnalysis.getConfig();
+                _cvContourCenter.init(depthWidth, depthHeight);
+                _analysisConfig = _cvContourCenter.getConfig();
 
-#ifdef USE_OPTICAL_FLOW
-                flowSolver.setup(depthWidth, depthHeight, .35f, 5, 10, 1, 3, 2.25f, false, false);
-#endif
+                _opticalFlow.setup(depthWidth, depthHeight);
 
                 _bTexturesInitialized = true;
             }
@@ -80,13 +78,13 @@ void ofApp::update() {
             continue;
         }
 
-        _depthAnalysis.update(&_texDepth[d]);
+        _cvContourCenter.update(&_texDepth[d]);
+        _opticalFlow.update(&_texDepth[d], _optsShowGui);
 
-        if (_depthAnalysis.isUpdated()) {
-            _moments = _depthAnalysis.getMoments();
+        if (_cvContourCenter.isUpdated()) {
+            _moments = _cvContourCenter.getMoments();
 
             if (_optsShowMoments) {
-                uint16_t idx = (uint16_t) _moments.index;
                 float scale = ofGetWidth() / _texDepth[d].getWidth();
 
                 glNewList(_displayList, GL_COMPILE);
@@ -104,15 +102,11 @@ void ofApp::update() {
                 glEndList();
             }
         }
+
+        _flowResults = _opticalFlow.getFlowResults();
     }
 
     if (_bTexturesInitialized) {
-#ifdef USE_OPTICAL_FLOW
-        if (_bTexturesInitialized) {
-            flowSolver.update(_depthImage);
-        }
-#endif
-
         if (_bParticlesInitialized && !_optsFreezeParticles) {
             _particles.update();
         }
@@ -142,7 +136,7 @@ void ofApp::draw() {
             ofPushStyle();
             ofPushMatrix();
             ofTranslate(ofGetWidth() * .5f, ofGetHeight() * .5f);
-            if (_depthAnalysis.optsFlipCenter) {
+            if (_cvContourCenter.optsFlipCenter) {
                 ofSetColor(255, 0, 0);
             } else {
                 ofSetColor(0, 255, 0);
@@ -163,11 +157,10 @@ void ofApp::draw() {
 
         if (_optsShowGui) {
             _texDepth[0].draw(ofGetWidth() - 20 - _texDepth[0].getWidth(), 20);
-
-#ifdef USE_OPTICAL_FLOW
-            drawFlowColored(_texDepth[0].getWidth(), _texDepth[0].getHeight());
-#endif
-
+            ofPushStyle();
+            ofEnableAlphaBlending();
+            _opticalFlow.getVelocityMesh().draw();
+            ofPopStyle();
             _panel.draw();
         }
 
@@ -221,45 +214,6 @@ void ofApp::particleSetup() {
     _particles.zeroDataTexture(ofxGpuParticles::VELOCITY);
 }
 
-#ifdef USE_OPTICAL_FLOW
-void ofApp::drawFlowColored(float width, float height, float degMin, float degMax, float velMin, float velMax) {
-    ofPoint vel;
-    ofMesh velMesh;
-    float angle;
-
-    velMesh.setMode(OF_PRIMITIVE_LINES);
-
-    for(int x=0; x<width; x+=3) {
-        for(int y=0; y<height; y+=3) {
-            vel = flowSolver.getVelAtPixel(x, y);
-            ofVec3f p(x,y);
-            ofVec3f vc = vel;
-            vc.normalize();
-            angle = atan2(vc.y, vc.x)+3.14159265f;
-            if(vel.length() < velMin || vel.length() >  velMax
-                    || angle < ofDegToRad(degMin)
-                    || angle > ofDegToRad(degMax)) {
-                continue;
-            }
-            float hue = angle/(3.14159265f*2.0f);
-            ofFloatColor c;
-            c.setHsb(hue, 1.f, 1.f);
-            c.a = 0.25f;
-            velMesh.addColor(c);
-            velMesh.addVertex(p);
-            c.a = 0.f;
-            velMesh.addColor(c);
-            velMesh.addVertex(p+vel*10.f);
-        }
-    }
-
-    ofPushStyle();
-    ofEnableAlphaBlending();
-    velMesh.draw();
-    ofPopStyle();
-}
-#endif
-
 //--------------------------------------------------------------
 void ofApp::exit() {
     _panel.saveToFile("settings.xml");
@@ -287,10 +241,10 @@ void ofApp::keyPressed (int key) {
             _optsShowStats = !_optsShowStats;
             break;
         case 'y':
-            _depthAnalysis.optsFlipImage = !_depthAnalysis.optsFlipImage;
+            _cvContourCenter.optsFlipImage = !_cvContourCenter.optsFlipImage;
             break;
         case 'x':
-            _depthAnalysis.optsFlipCenter = !_depthAnalysis.optsFlipCenter;
+            _cvContourCenter.optsFlipCenter = !_cvContourCenter.optsFlipCenter;
             break;
         default:
             break;
