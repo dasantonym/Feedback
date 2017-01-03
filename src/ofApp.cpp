@@ -2,7 +2,7 @@
 
 //--------------------------------------------------------------
 void ofApp::setup() {
-    ofSetLogLevel(OF_LOG_VERBOSE);
+    ofSetLogLevel(OF_LOG_NOTICE);
     ofSetVerticalSync(true);
 
     _panel.setup("", "settings.xml", 20, 20);
@@ -42,14 +42,24 @@ void ofApp::onParticlesUpdate(ofShader& shader)
 {
     shader.setUniform3fv("momentCenter", _moments.center.getPtr());
     shader.setUniform2fv("viewSize", _viewSize.getPtr());
+    shader.setUniform1f("energy", _particleEnergy);
     shader.setUniform1f("elapsed", (float) ofGetLastFrameTime());
+    shader.setUniform1f("ageSeconds", (float)(ofGetElapsedTimeMillis() - _particleStartTime) * .001f);
     shader.setUniform1f("radiusSquared", (float) pow(ofGetHeight(), 2.f));
+}
+
+void ofApp::onParticlesDraw(ofShader& shader)
+{
+    shader.setUniform3fv("momentCenter", _moments.center.getPtr());
+    shader.setUniform1f("energy", _particleEnergy);
+    shader.setUniform1f("ageSeconds", (float)(ofGetElapsedTimeMillis() - _particleStartTime) * .001f);
 }
 
 //--------------------------------------------------------------
 void ofApp::update() {
     if (_optsReceiveOSC) {
         _osc.update();
+        _particleEnergy = _osc.attack;
     }
 
     for(uint8_t d = 0; d < _kinect.size(); d++){
@@ -84,7 +94,7 @@ void ofApp::update() {
         if (_cvContourCenter.isUpdated()) {
             _moments = _cvContourCenter.getMoments();
 
-            if (_optsShowMoments) {
+            if (_optsShowMoments && _moments.contour.size() > 0) {
                 float scale = ofGetWidth() / _texDepth[d].getWidth();
 
                 glNewList(_displayList, GL_COMPILE);
@@ -109,6 +119,10 @@ void ofApp::update() {
     if (_bTexturesInitialized) {
         if (_bParticlesInitialized && !_optsFreezeParticles) {
             _particles.update();
+
+            if ((float)(ofGetElapsedTimeMillis() - _particleStartTime) * .001f > 30.f) {
+                particleSetup();
+            }
         }
     }
 }
@@ -148,10 +162,11 @@ void ofApp::draw() {
 
         if (_bParticlesInitialized) {
             ofPushMatrix();
+            ofPushStyle();
             ofTranslate(ofGetWidth() * .5f, ofGetHeight() * .5f);
             ofEnableBlendMode(OF_BLENDMODE_ADD);
             _particles.draw();
-            ofDisableBlendMode();
+            ofPopStyle();
             ofPopMatrix();
         }
 
@@ -189,6 +204,7 @@ void ofApp::particleSetup() {
         }
 
         ofAddListener(_particles.updateEvent, this, &ofApp::onParticlesUpdate);
+        ofAddListener(_particles.drawEvent, this, &ofApp::onParticlesDraw);
 
         _bParticlesInitialized = true;
     }
@@ -212,6 +228,9 @@ void ofApp::particleSetup() {
     delete[] positions;
 
     _particles.zeroDataTexture(ofxGpuParticles::VELOCITY);
+
+    _particleEnergy = .0f;
+    _particleStartTime = ofGetElapsedTimeMillis();
 }
 
 //--------------------------------------------------------------

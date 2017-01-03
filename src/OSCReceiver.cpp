@@ -14,40 +14,9 @@ void OSCReceiver::update() {
         ofxOscMessage m;
         receiver.getNextMessage(m);
 
-        if (m.getAddress() == "/bonk")
+        if (m.getAddress() == "/growth/total")
         {
-            float val = m.getArgAsFloat(1) / 100.f;
-            if (val > 1.f)
-            {
-                val = 1.f;
-            }
-            attack = val;
-        } else {
-            attack *= .5f;
+            attack = max(min(m.getArgAsFloat(0) / 10.f, 1.f), .0f);
         }
-
-        if (m.getAddress() == "/pitch")
-        {
-            float val = m.getArgAsFloat(0)/80.f;
-            if (val > 1.f)
-            {
-                val = 1.f;
-            }
-            pitch = val;
-        } else {
-            pitch *= .5f;
-        }
-
-        if (m.getAddress() == "/amp")
-        {
-            float val = m.getArgAsFloat(0)/100.f;
-
-            if (val > 1.f)
-            {
-                val = 1.f;
-            }
-            amp = val;
-        }
-
     }
 }

@@ -23,6 +23,7 @@ public:
 
     void particleSetup();
     void onParticlesUpdate(ofShader& shader);
+    void onParticlesDraw(ofShader& shader);
     
     void keyPressed(int key);
     void windowResized(int w, int h);
@@ -46,6 +47,9 @@ public:
 
     bool _bTexturesInitialized;
     bool _bParticlesInitialized;
+
+    float _particleEnergy;
+    double _particleStartTime;
 
     ofxToggle _optsShowMoments;
     ofxToggle _optsShowGui;
