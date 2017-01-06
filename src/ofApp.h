@@ -48,6 +48,7 @@ public:
     bool _bTexturesInitialized;
     bool _bParticlesInitialized;
 
+    float* _positions;
     float _particleEnergy;
     double _particleStartTime;
 

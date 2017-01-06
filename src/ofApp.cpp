@@ -59,7 +59,11 @@ void ofApp::onParticlesDraw(ofShader& shader)
 void ofApp::update() {
     if (_optsReceiveOSC) {
         _osc.update();
-        _particleEnergy = _osc.attack;
+        if (_osc.attack < _particleEnergy) {
+            _particleEnergy -= max((_particleEnergy + _osc.attack) * .05f, .0f);
+        } else {
+            _particleEnergy = _osc.attack;
+        }
     }
 
     for(uint8_t d = 0; d < _kinect.size(); d++){
@@ -121,7 +125,7 @@ void ofApp::update() {
             _particles.update();
 
             if ((float)(ofGetElapsedTimeMillis() - _particleStartTime) * .001f > 30.f) {
-                particleSetup();
+                //particleSetup();
             }
         }
     }
@@ -206,26 +210,27 @@ void ofApp::particleSetup() {
         ofAddListener(_particles.updateEvent, this, &ofApp::onParticlesUpdate);
         ofAddListener(_particles.drawEvent, this, &ofApp::onParticlesDraw);
 
+        _positions = new float[w * h * 4];
+
         _bParticlesInitialized = true;
     }
 
     ofLogNotice() << "Adding particle count: " << w * h;
 
     // use new to allocate floats on the heap rather than the stack
-    float* positions = new float[w * h * 4];
     for (uint16_t y = 0; y < h; ++y)
     {
         for (uint16_t x = 0; x < w; ++x)
         {
             uint32_t idx = y * w + x;
-            positions[idx * 4] = (x - w * .5f) * .25f;
-            positions[idx * 4 + 1] = (y - h * .5f) * -.25f;
-            positions[idx * 4 + 2] = 0.f;
-            positions[idx * 4 + 3] = 0.f;
+            _positions[idx * 4] = (x - w * .5f) * .25f;
+            _positions[idx * 4 + 1] = (y - h * .5f) * -.25f;
+            _positions[idx * 4 + 2] = 0.f;
+            _positions[idx * 4 + 3] = 0.f;
         }
     }
-    _particles.loadDataTexture(ofxGpuParticles::POSITION, positions);
-    delete[] positions;
+    _particles.loadDataTexture(ofxGpuParticles::POSITION, _positions);
+    // delete[] positions;
 
     _particles.zeroDataTexture(ofxGpuParticles::VELOCITY);
 

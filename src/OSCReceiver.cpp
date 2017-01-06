@@ -16,7 +16,7 @@ void OSCReceiver::update() {
 
         if (m.getAddress() == "/growth/total")
         {
-            attack = max(min(m.getArgAsFloat(0) / 10.f, 1.f), .0f);
+            attack = max(min(m.getArgAsFloat(0) / 20.f, 1.f), .0f);
         }
     }
 }

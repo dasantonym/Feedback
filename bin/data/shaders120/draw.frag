@@ -13,6 +13,6 @@ void main()
     vec3 pos = texture2DRect(particles0, gl_TexCoord[0].st).xyz;
     vec3 vel = texture2DRect(particles1, gl_TexCoord[0].st).xyz;
 
-    float amod = smoothstep(0.0, 1.0, energy) * 2.0 - 1.0;
-    gl_FragColor = vec4(1.0, 0.4 + amod * 0.4 , 0.1, 0.03);
+    float amod = smoothstep(0.0, 1.0, energy) * 0.5 - 1.0;
+    gl_FragColor = vec4(1.0, 0.4 + amod * 0.2 , 0.1, 0.03);
 }

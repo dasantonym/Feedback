@@ -7,7 +7,9 @@ uniform sampler2DRect particles1;
 uniform vec3 momentCenter;
 uniform vec2 viewSize;
 uniform float radiusSquared;
+uniform float ageSeconds;
 uniform float elapsed;
+uniform float energy;
 
 in vec2 texCoordVarying;
 
@@ -23,7 +25,7 @@ void main()
     vec3 direction = momentCenter - pos.xyz;
     float distSquared = dot(direction, direction);
     float magnitude = viewSize.y * (1.0 - distSquared / radiusSquared);
-    vec3 force = step(distSquared, radiusSquared) * magnitude * normalize(direction);
+    vec3 force = step(distSquared, radiusSquared) * magnitude * normalize(direction) * energy;
     
     // gravity
     force += vec3(0.0, 10.0, 0.0);
@@ -36,10 +38,10 @@ void main()
     vel.y *= step(abs(pos.y), viewSize.y * 0.5) * 2.0 - 1.0;
     
     // damping
-    vel *= 0.995;
+    vel *= 0.995 - (energy * 2.0 - 1.0) * 0.01;
     
     // move
-    pos += elapsed * vel;
+    pos += elapsed * vel * energy;
     
     posOut = vec4(pos, 1.0);
     velOut = vec4(vel, 0.0);

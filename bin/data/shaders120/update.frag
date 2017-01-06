@@ -24,7 +24,7 @@ void main()
     vec3 force = step(distSquared, radiusSquared) * magnitude * normalize(direction) * energy;
 
     // gravity
-    force += vec3(0.0, 10.0, 0.0);
+    force += vec3(0.0, 10.0 - 20.0 * energy, 0.0);
 
     // accelerate
     vel += elapsed * force;
@@ -34,8 +34,8 @@ void main()
     vel.y *= step(abs(pos.y), viewSize.y * 0.5) * 2.0 - 1.0;
     
     // damping
-    vel *= 1.0 - energy * 0.001;
-    
+    vel *= 0.995;
+
     // move
     pos += elapsed * vel;
     
